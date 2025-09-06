@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Shri Ram Diagnostic Centre</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #e0f2fe, #f0fdfa);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .card {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: 0.3s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-blue-800 text-white p-6 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold tracking-wide">🏥 Shri Ram Diagnostic Centre</h1>
+      <nav class="space-x-4">
+        <button onclick="showSection('appointmentForm')" class="hover:underline">Book Appointment</button>
+        <button onclick="showSection('statusCheck')" class="hover:underline">Check Status</button>
+        <button onclick="showAdminLogin()" class="hover:underline">Admin Panel</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Appointment Form -->
+  <section id="appointmentForm" class="container mx-auto p-6">
+    <div class="card max-w-lg mx-auto">
+      <h2 class="text-xl font-bold mb-4 text-blue-700">Book an Appointment</h2>
+      <form id="apptForm" class="space-y-3">
+        <input type="text" id="name" placeholder="Full Name" class="w-full border p-2 rounded" required />
+        <input type="tel" id="phone" placeholder="Phone Number" class="w-full border p-2 rounded" required />
+        
+        <select id="service" class="w-full border p-2 rounded" required onchange="showTests(this.value)">
+          <option value="">Select Service</option>
+          <option value="X-Ray">X-Ray</option>
+          <option value="Ultrasound">Ultrasound</option>
+        </select>
+
+        <div id="ultrasoundTests" class="hidden">
+          <label class="block text-gray-700">Choose Test:</label>
+          <select id="testType" class="w-full border p-2 rounded">
+            <option value="">Select Test</option>
+            <option>Whole Abdomen</option>
+            <option>Color Doppler</option>
+            <option>Fetal Doppler</option>
+            <option>Fibroscan</option>
+            <option>NTNB Scan</option>
+            <option>Growth Scan</option>
+            <option>USG Neck</option>
+            <option>Other Procedures</option>
+          </select>
+        </div>
+
+        <input type="date" id="date" class="w-full border p-2 rounded" required />
+        <button type="submit" class="bg-blue-700 text-white w-full py-2 rounded hover:bg-blue-900 transition">Submit</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Status Check -->
+  <section id="statusCheck" class="hidden container mx-auto p-6">
+    <div class="card max-w-lg mx-auto">
+      <h2 class="text-xl font-bold mb-4 text-green-700">Check Appointment Status</h2>
+      <input type="text" id="statusApptNo" placeholder="Enter Appointment Number" class="w-full border p-2 rounded mb-3" />
+      <button onclick="checkStatus()" class="bg-green-700 text-white w-full py-2 rounded hover:bg-green-900">Check Status</button>
+      <div id="statusResult" class="mt-4 p-3 border rounded hidden"></div>
+    </div>
+  </section>
+
+  <!-- Admin Login -->
+  <section id="adminLogin" class="hidden container mx-auto p-6">
+    <div class="card max-w-md mx-auto">
+      <h2 class="text-xl font-bold mb-4 text-purple-700">Admin Login</h2>
+      <input type="password" id="adminPass" placeholder="Enter Password" class="w-full border p-2 rounded mb-3" />
+      <button onclick="adminLogin()" class="bg-purple-700 text-white w-full py-2 rounded hover:bg-purple-900">Login</button>
+    </div>
+  </section>
+
+  <!-- Admin Panel -->
+  <section id="adminPanel" class="hidden container mx-auto p-6">
+    <div class="card">
+      <h2 class="text-2xl font-bold text-center text-gray-700 mb-6">Admin Panel</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full bg-white rounded-xl border">
+          <thead class="bg-blue-600 text-white">
+            <tr>
+              <th class="p-2">Appt No</th>
+              <th class="p-2">Name</th>
+              <th class="p-2">Phone</th>
+              <th class="p-2">Service</th>
+              <th class="p-2">Date</th>
+              <th class="p-2">Status</th>
+              <th class="p-2">Time</th>
+              <th class="p-2">Action</th>
+            </tr>
+          </thead>
+          <tbody id="appointmentsList"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function showSection(id) {
+      document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
+      document.getElementById(id).classList.remove("hidden");
+    }
+    function showAdminLogin() { showSection('adminLogin'); }
+
+    function getAppointments(){ return JSON.parse(localStorage.getItem("appointments")||"{}"); }
+    function saveAppointments(data){ localStorage.setItem("appointments", JSON.stringify(data)); }
+
+    function showTests(service){
+      document.getElementById("ultrasoundTests").classList.toggle("hidden", service !== "Ultrasound");
+    }
+
+    document.getElementById("apptForm").addEventListener("submit", function(e){
+      e.preventDefault();
+      let id="APT"+Date.now();
+      let appt={
+        appointmentNo:id,
+        name:document.getElementById("name").value,
+        phone:document.getElementById("phone").value,
+        service:document.getElementById("service").value,
+        testType:document.getElementById("testType").value,
+        date:document.getElementById("date").value,
+        status:"Pending",
+        time:""
+      };
+      let all=getAppointments(); all[id]=appt; saveAppointments(all);
+      Swal.fire("Success!","Your appointment is booked. Appt No: "+id,"success");
+      e.target.reset(); document.getElementById("ultrasoundTests").classList.add("hidden");
+    });
+
+    function checkStatus(){
+      let id=document.getElementById("statusApptNo").value.trim();
+      let all=getAppointments(), box=document.getElementById("statusResult");
+      if(all[id]){
+        let a=all[id];
+        let time=a.time?formatTime(a.time):"Not Assigned";
+        box.innerHTML=`<b>Appt No:</b> ${a.appointmentNo}<br><b>Name:</b> ${a.name}<br><b>Service:</b> ${a.service} ${a.testType?"("+a.testType+")":""}<br><b>Date:</b> ${a.date}<br><b>Status:</b> ${a.status}<br><b>Time:</b> ${time}`;
+        box.classList.remove("hidden");
+      } else {
+        box.innerHTML="<span class='text-red-600 font-bold'>Appointment not found!</span>";
+        box.classList.remove("hidden");
+      }
+    }
+
+    function adminLogin(){
+      if(document.getElementById("adminPass").value==="admin123"){
+        showSection("adminPanel"); loadAppointments();
+      } else { Swal.fire("Error","Wrong Password","error"); }
+    }
+
+    function loadAppointments(){
+      let all=getAppointments(), c=document.getElementById("appointmentsList"); c.innerHTML="";
+      for(let k in all){
+        let a=all[k];
+        c.innerHTML+=`
+        <tr class="border-b hover:bg-gray-50">
+          <td class="p-2 font-bold text-blue-700">${a.appointmentNo}</td>
+          <td class="p-2">${a.name}</td>
+          <td class="p-2">${a.phone}</td>
+          <td class="p-2">${a.service} ${a.testType?`(${a.testType})`:""}</td>
+          <td class="p-2">${a.date}</td>
+          <td class="p-2"><span class="px-2 py-1 rounded text-white ${a.status=='Pending'?'bg-yellow-500':a.status=='Approved'?'bg-green-600':'bg-red-600'}">${a.status}</span></td>
+          <td class="p-2">${formatTime(a.time)}</td>
+          <td class="p-2 flex gap-1 flex-wrap">
+            <input type="time" id="time_${a.appointmentNo}" class="border p-1 rounded">
+            <button onclick="approve('${a.appointmentNo}')" class="bg-green-600 text-white px-2 py-1 rounded">Approve</button>
+            <button onclick="reject('${a.appointmentNo}')" class="bg-yellow-600 text-white px-2 py-1 rounded">Reject</button>
+            <button onclick="deleteAppointment('${a.appointmentNo}')" class="bg-red-700 text-white px-2 py-1 rounded">Delete</button>
+          </td>
+        </tr>`;
+      }
+    }
+
+    function approve(id){
+      let all=getAppointments(), t=document.getElementById("time_"+id).value;
+      if(!t){ Swal.fire("Error","Please select a time","error"); return; }
+      all[id].status="Approved"; all[id].time=t; saveAppointments(all); loadAppointments(); Swal.fire("Approved","Appointment approved with time","success");
+    }
+    function reject(id){
+      let all=getAppointments(); all[id].status="Rejected"; all[id].time=""; saveAppointments(all); loadAppointments(); Swal.fire("Rejected","Appointment rejected","info");
+    }
+    function deleteAppointment(id){
+      Swal.fire({title:"Are you sure?",text:"This appointment will be deleted!",icon:"warning",showCancelButton:true,confirmButtonColor:"#d33"}).then(r=>{
+        if(r.isConfirmed){ let all=getAppointments(); delete all[id]; saveAppointments(all); loadAppointments(); Swal.fire("Deleted!","Appointment removed","success"); }
+      });
+    }
+    function formatTime(t){ if(!t) return ""; let [h,m]=t.split(":"); let ampm=h>=12?"PM":"AM"; h=h%12||12; return `${h}:${m} ${ampm}`; }
+  </script>
+</body>
+</html>
